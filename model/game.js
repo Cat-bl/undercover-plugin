@@ -77,6 +77,10 @@ function scheduleVoteTimeout(game) {
 function onWaitTimeout(game) {
   if (game.state !== STATE.WAITING) return
   clearTimer(game)
+  if (game.players.length >= game.config.minPlayers) {
+    notify(game, 'wait-autostart')
+    return
+  }
   delete games[game.groupId]
   notify(game, 'wait-timeout')
 }
@@ -450,6 +454,7 @@ export function addPlayer(groupId, userId, nickname) {
     alive: true,
     order: 0,
   })
+  scheduleWaitTimeout(game)
   return { ok: true, game }
 }
 

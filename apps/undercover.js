@@ -56,7 +56,7 @@ export class Undercover extends plugin {
   async start(e) {
     if (!e.isGroup) return false
     const game = Game.getGame(e.group_id)
-    if (!game) return e.reply('本群还未发起游戏', true)
+    if (!game || game.state === 'ended') return e.reply('本群还未发起游戏', true)
     if (String(e.user_id) != game.initiator) return e.reply('只有发起人可以开始游戏', true)
     if (game.players.length < game.config.minPlayers)
       return e.reply(`人数不足，至少需要 ${game.config.minPlayers} 人`, true)
@@ -87,68 +87,7 @@ export class Undercover extends plugin {
       }
     }
 
-    await e.reply(
-      `正在检查玩家私聊连通性${category ? `（类型：${category}）` : ''}...`,
-    )
-    const probeFailed = []
-    for (const p of game.players) {
-      try {
-        await sendPrivate(
-          p.userId,
-          e.group_id,
-          '【谁是卧底】连通性检测，稍后将私聊下发你的词语，请勿关闭此会话',
-        )
-      } catch (err) {
-        logger?.error(`[谁是卧底] 连通检测失败 ${p.userId}:`, err?.message || err)
-        probeFailed.push(p)
-      }
-    }
-    if (probeFailed.length) {
-      const names = probeFailed.map(p => `${p.nickname}(${p.userId})`).join('、')
-      return e.reply(
-        `以下玩家无法接收私聊消息：\n${names}\n\n请上述玩家添加机器人好友，或群内开启「临时会话」功能。\n房间已保留，解决后发起人再次 #开始卧底 即可；或 #结束卧底 取消。`,
-        true,
-      )
-    }
-
-    await e.reply(
-      `连通检测通过，正在${category ? `以「${category}」类型` : ''}生成词对，大概需要 1 分钟，请稍后...`,
-    )
-    let pair
-    try {
-      pair = await pickWordPair(e.group_id, category)
-    } catch (err) {
-      logger?.error(`[谁是卧底] 选词失败`, err)
-      return e.reply(`选词失败：${err?.message || err}\n房间已保留，可再次 #开始卧底`, true)
-    }
-    if (!pair) return e.reply('选词失败：词库为空且 AI 不可用\n房间已保留', true)
-
-    const r = Game.startGame(e.group_id, String(e.user_id), pair)
-    if (r.error) return e.reply(r.error, true)
-
-    const failed = []
-    for (const p of r.game.players) {
-      try {
-        await sendPrivate(
-          p.userId,
-          e.group_id,
-          `【谁是卧底】\n你是 ${p.order} 号\n你的词是：${p.word}\n\n请回到群内，轮到你时发送 #描述 内容`,
-        )
-      } catch (err) {
-        logger?.error(`[谁是卧底] 发词失败 ${p.userId}:`, err?.message || err)
-        failed.push(p)
-      }
-    }
-
-    if (failed.length) {
-      Game.endGame(e.group_id)
-      const names = failed.map(p => `${p.order}号 ${p.nickname}`).join('、')
-      await e.reply(`发词失败：${names}\n游戏已取消`, true)
-      return true
-    }
-
-    await e.reply('词语已私聊发送，游戏开始')
-    await this.render(e, r.game)
+    await runStart(e.group_id, String(e.user_id), category, async m => e.reply(m, true))
     return true
   }
 
@@ -252,6 +191,12 @@ Game.setExternalTick(async (game, type, extra) => {
       return
     }
 
+    if (type === 'wait-autostart') {
+      await g.sendMsg('等待超时，人数已达标，自动开始游戏...')
+      await runStart(game.groupId, game.initiator, null, async m => g.sendMsg(m))
+      return
+    }
+
     if (type === 'describe-warn') {
       const alive = game.players.filter(p => p.alive).sort((a, b) => a.order - b.order)
       const speaker = alive.find(p => p.order === game.currentOrder)
@@ -296,6 +241,77 @@ function extractAt(e) {
     if (seg.type === 'at' && String(seg.qq) != String(e.self_id)) return seg.qq
   }
   return null
+}
+
+async function runStart(groupId, initiatorId, category, reply) {
+  const game = Game.getGame(groupId)
+  if (!game || game.state !== 'waiting') return reply('本群状态异常，无法开始')
+  if (game.players.length < game.config.minPlayers)
+    return reply(`人数不足，至少需要 ${game.config.minPlayers} 人`)
+
+  await reply(`正在检查玩家私聊连通性${category ? `（类型：${category}）` : ''}...`)
+  const probeFailed = []
+  for (const p of game.players) {
+    try {
+      await sendPrivate(
+        p.userId,
+        groupId,
+        '【谁是卧底】连通性检测，稍后将私聊下发你的词语，请勿关闭此会话',
+      )
+    } catch (err) {
+      logger?.error(`[谁是卧底] 连通检测失败 ${p.userId}:`, err?.message || err)
+      probeFailed.push(p)
+    }
+  }
+  if (probeFailed.length) {
+    const names = probeFailed.map(p => `${p.nickname}(${p.userId})`).join('、')
+    return reply(
+      `以下玩家无法接收私聊消息：\n${names}\n\n请上述玩家添加机器人好友，或群内开启「临时会话」功能。\n房间已保留，解决后发起人再次 #开始卧底 即可；或 #结束卧底 取消。`,
+    )
+  }
+
+  await reply(
+    `连通检测通过，正在${category ? `以「${category}」类型` : ''}生成词对，大概需要 1 分钟，请稍后...`,
+  )
+  let pair
+  try {
+    pair = await pickWordPair(groupId, category)
+  } catch (err) {
+    logger?.error(`[谁是卧底] 选词失败`, err)
+    return reply(`选词失败：${err?.message || err}\n房间已保留，可再次 #开始卧底`)
+  }
+  if (!pair) return reply('选词失败：词库为空且 AI 不可用\n房间已保留')
+
+  const r = Game.startGame(groupId, initiatorId, pair)
+  if (r.error) return reply(r.error)
+
+  const failed = []
+  for (const p of r.game.players) {
+    try {
+      await sendPrivate(
+        p.userId,
+        groupId,
+        `【谁是卧底】\n你是 ${p.order} 号\n你的词是：${p.word}\n\n请回到群内，轮到你时发送 #描述 内容`,
+      )
+    } catch (err) {
+      logger?.error(`[谁是卧底] 发词失败 ${p.userId}:`, err?.message || err)
+      failed.push(p)
+    }
+  }
+
+  if (failed.length) {
+    Game.endGame(groupId)
+    const names = failed.map(p => `${p.order}号 ${p.nickname}`).join('、')
+    return reply(`发词失败：${names}\n游戏已取消`)
+  }
+
+  await reply('词语已私聊发送，游戏开始')
+  try {
+    const img = await renderGame(r.game)
+    if (img) await reply(img)
+  } catch (err) {
+    logger?.error(`[谁是卧底] 渲染失败`, err)
+  }
 }
 
 async function sendPrivate(userId, groupId, msg) {
