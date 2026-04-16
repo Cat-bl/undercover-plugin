@@ -435,7 +435,8 @@ export function createGame(groupId, initiatorId, nickname) {
 
 export function addPlayer(groupId, userId, nickname) {
   const game = games[groupId]
-  if (!game) return { error: '本群还未发起游戏，请先 #谁是卧底' }
+  if (!game || game.state === STATE.ENDED)
+    return { error: '本群还未发起游戏，请先 #谁是卧底' }
   if (game.state !== STATE.WAITING) return { error: '游戏已开始，无法加入' }
   if (game.players.find(p => p.userId == userId)) return { error: '你已经在游戏中' }
   if (game.players.length >= game.config.maxPlayers)
@@ -454,7 +455,7 @@ export function addPlayer(groupId, userId, nickname) {
 
 export function removePlayer(groupId, userId) {
   const game = games[groupId]
-  if (!game) return { error: '本群还未发起游戏' }
+  if (!game || game.state === STATE.ENDED) return { error: '本群还未发起游戏' }
   if (game.state !== STATE.WAITING) return { error: '游戏已开始，无法退出' }
   const idx = game.players.findIndex(p => p.userId == userId)
   if (idx < 0) return { error: '你不在游戏中' }
