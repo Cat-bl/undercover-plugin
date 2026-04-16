@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        width: 650px;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: #f5f5f7;
+        -webkit-font-smoothing: antialiased;
+      }
+      .app {
+        width: 650px;
+        background: #f5f5f7;
+        padding-bottom: 10px;
+      }
+      .header {
+        background: linear-gradient(180deg, #e8e5f5 0%, #f5f5f7 100%);
+        padding: 22px 18px 18px 18px;
+      }
+      .header-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+        margin-bottom: 14px;
+      }
+      .header-title .round {
+        color: #8b5cf6;
+        margin-left: 8px;
+      }
+      .player-box {
+        border: 2px dashed #b8aeda;
+        border-radius: 14px;
+        padding: 14px 10px 10px 10px;
+        background: rgba(255,255,255,0.5);
+      }
+      .players {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        column-gap: 6px;
+        row-gap: 14px;
+        justify-items: center;
+      }
+      .player {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        min-width: 0;
+      }
+      .word-bubble {
+        background: #eef2ff;
+        color: #4f46e5;
+        border-radius: 14px;
+        padding: 4px 12px;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 6px;
+        max-width: 88px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .word-bubble.undercover {
+        background: #8b5cf6;
+        color: #fff;
+      }
+      .word-bubble.civilian {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .avatar-wrap {
+        position: relative;
+        width: 56px;
+        height: 56px;
+      }
+      .avatar-wrap img {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #ddd;
+      }
+      .player.dead .avatar-wrap img {
+        filter: grayscale(100%) brightness(0.7);
+      }
+      .player.dead .cross {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #e11d48;
+        font-size: 36px;
+        font-weight: 900;
+      }
+      .order-tag {
+        font-size: 13px;
+        color: #555;
+        margin-top: 4px;
+      }
+      .chat {
+        padding: 16px 14px;
+        background: #f5f5f7;
+        min-height: 120px;
+      }
+      .msg {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .msg-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: #ddd;
+      }
+      .msg-body {
+        margin-left: 10px;
+        max-width: 500px;
+      }
+      .msg-name {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 3px;
+      }
+      .bubble {
+        background: #fff;
+        border-radius: 16px;
+        padding: 10px 14px;
+        font-size: 15px;
+        color: #222;
+        line-height: 1.45;
+        display: inline-block;
+        word-break: break-word;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      }
+      .msg.system {
+        justify-content: center;
+      }
+      .msg.system .sys-tag {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 5px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+      }
+      .msg.out {
+        justify-content: center;
+      }
+      .msg.out .out-tag {
+        background: #fee2e2;
+        color: #b91c1c;
+        padding: 6px 16px;
+        border-radius: 14px;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+      }
+      .msg.out .out-tag::before {
+        content: "✕";
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 18px;
+        height: 18px;
+        background: #dc2626;
+        color: #fff;
+        border-radius: 50%;
+        font-size: 12px;
+        margin-right: 8px;
+      }
+      .msg.win {
+        justify-content: center;
+      }
+      .msg.win .win-tag {
+        background: #fff;
+        color: #111;
+        border: 1.5px solid #ddd;
+        padding: 6px 18px;
+        border-radius: 14px;
+        font-size: 14px;
+      }
+      .status-bar {
+        margin: 4px 14px 0 14px;
+        padding: 10px 14px;
+        background: #fff;
+        border-radius: 10px;
+        font-size: 13px;
+        color: #555;
+        text-align: center;
+        border: 1px solid #eee;
+        white-space: pre-line;
+        line-height: 1.6;
+      }
+      .msg.vote { justify-content: center; }
+      .msg.vote .vote-tag {
+        background: #dcfce7;
+        color: #15803d;
+        padding: 5px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+      }
+      .msg.vote.abstain .vote-tag {
+        background: #f3f4f6;
+        color: #6b7280;
+      }
+      .status-bar.ended {
+        background: #fef3c7;
+        color: #92400e;
+        border-color: #fde68a;
+      }
+      .footer {
+        text-align: center;
+        color: #aaa;
+        font-size: 11px;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container" class="app">
+      <div class="header">
+        <div class="header-title">
+          谁是卧底
+          {{if _data.stateLabel}}
+          <span class="round">· {{_data.stateLabel}}</span>
+          {{/if}}
+        </div>
+        <div class="player-box">
+          <div class="players">
+            {{each _data.players p}}
+            <div class="player {{p.alive ? '' : 'dead'}}">
+              <div class="word-bubble {{p.wordClass}}">{{p.displayWord}}</div>
+              <div class="avatar-wrap">
+                <img src="{{p.avatar}}" />
+                {{if !p.alive}}<div class="cross">✕</div>{{/if}}
+              </div>
+              <div class="order-tag">{{p.order}}号</div>
+            </div>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+
+      <div class="chat">
+        {{if _data.truncated}}
+        <div class="msg system"><div class="sys-tag">已省略前 {{_data.omittedCount}} 条消息...</div></div>
+        {{/if}}
+        {{each _data.messages m}}
+          {{if m.type === 'describe'}}
+          <div class="msg">
+            <img class="msg-avatar" src="{{m.avatar}}" />
+            <div class="msg-body">
+              <div class="msg-name">{{m.order}}号 · {{m.nickname}}</div>
+              <div class="bubble">{{m.content}}</div>
+            </div>
+          </div>
+          {{else if m.type === 'system'}}
+          <div class="msg system"><div class="sys-tag">{{m.content}}</div></div>
+          {{else if m.type === 'out'}}
+          <div class="msg out"><div class="out-tag">{{m.content}}</div></div>
+          {{else if m.type === 'win'}}
+          <div class="msg win"><div class="win-tag">{{m.content}}</div></div>
+          {{else if m.type === 'vote'}}
+          <div class="msg vote {{m.abstain ? 'abstain' : ''}}">
+            <div class="vote-tag">
+              {{if m.abstain}}
+              🗳 {{m.voterOrder}}号 {{m.voterNick}} 弃权{{if m.auto}}（超时自动）{{/if}}
+              {{else}}
+              🗳 {{m.voterOrder}}号 {{m.voterNick}} → {{m.targetOrder}}号 {{m.targetNick}}
+              {{/if}}
+            </div>
+          </div>
+          {{/if}}
+        {{/each}}
+      </div>
+
+      {{if _data.statusText}}
+      <div class="status-bar {{_data.ended ? 'ended' : ''}}">{{_data.statusText}}</div>
+      {{/if}}
+
+      <div class="footer">Trss-Yunzai · 谁是卧底 · 冰凉到通透</div>
+    </div>
+  </body>
+</html>

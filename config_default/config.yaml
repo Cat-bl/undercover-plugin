@@ -1,0 +1,53 @@
+# 谁是卧底插件配置
+# 修改本文件会热更新，无需重启
+
+# 词库来源
+#   ai    - 每局调用大模型出词（推荐，几乎不重复）
+#   local - 从 resources/words.json 随机选择
+#   mix   - 优先用 AI 出词，失败降级到本地词库
+wordSource: mix
+
+# 大模型配置（OpenAI 兼容接口）
+ai:
+  # 接口地址（完整到 /chat/completions）
+  apiUrl: https://openai/v1/chat/completions
+  # API Key
+  apiKey: ""
+  # 模型名
+  model: gemini-2.5-flash
+  # 请求超时时间（秒）
+  timeout: 120
+  # 重试次数（失败时最多重试几次，之后若 wordSource=mix 才降级本地词库）
+  retryCount: 3
+  # 温度（越高越随机，建议 0.9-1.2 保证多样性）
+  temperature: 1.1
+  # 系统提示词
+  systemPrompt: |-
+    你是"谁是卧底"游戏的出题助手。你需要生成一对在同一大类下、相似但有细微差别的词，让玩家难以通过描述快速区分。
+    要求：
+    1. 两个词必须属于同一大类（如都是水果/都是职业/都是电器）
+    2. 两个词要有区别但又有共性，以便双方都能描述
+    3. 避免过于常见的词对（如苹果-梨已被用烂），追求新颖
+    4. 只能返回 JSON，不要任何解释：{"civilian":"词1","undercover":"词2"}
+    5. 禁止出现政治/色情/暴力相关词汇
+  # 用户提示词（可追加避免重复的要求）
+  userPrompt: 请生成一对"谁是卧底"游戏的词对。直接返回 JSON，不要解释。
+
+# 游戏参数
+game:
+  # 最少玩家数（至少 3 人，推荐 4+）
+  minPlayers: 4
+  # 最多玩家数
+  maxPlayers: 12
+  # 渲染图中最多保留的聊天消息条数，超出时顶部显示"已省略前 N 条"
+  maxMessages: 40
+  # 描述阶段每人发言超时（秒），超时自动跳过
+  describeTimeout: 120
+  # 投票阶段总超时（秒），超时未投自动弃权并结算
+  voteTimeout: 120
+  # 等待阶段总超时（秒），发起后超时仍未开始则自动结束
+  waitTimeout: 300
+  # 超时前多少秒 @ 提醒一次（描述/投票阶段），设为 0 关闭
+  warnBefore: 30
+  # 淘汰玩家所需的最少得票数（得票最多者未达此数则本轮无人出局）
+  minVotesToEliminate: 2
