@@ -5,6 +5,14 @@
 # 使用效果
 ![效果图1](./images/1.png)
 
+# 安装
+
+在Yunzai根目录下执行：
+
+```bash
+git clone --depth=1 https://github.com/Cat-bl/undercover-plugin plugins/undercover-plugin
+```
+
 ## 指令
 
 | 指令 | 说明 |
