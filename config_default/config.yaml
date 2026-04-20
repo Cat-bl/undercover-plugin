@@ -41,9 +41,9 @@ game:
   # 渲染图中最多保留的聊天消息条数，超出时顶部显示"已省略前 N 条"
   maxMessages: 40
   # 描述阶段每人发言超时（秒），超时自动跳过
-  describeTimeout: 120
+  describeTimeout: 60
   # 投票阶段总超时（秒），超时未投自动弃权并结算
-  voteTimeout: 120
+  voteTimeout: 60
   # 等待阶段总超时（秒），发起后超时仍未开始则自动结束
   waitTimeout: 300
   # 超时前多少秒 @ 提醒一次（描述/投票阶段），设为 0 关闭
