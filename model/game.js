@@ -409,7 +409,7 @@ export function getGame(groupId) {
 
 export function createGame(groupId, initiatorId, nickname) {
   if (games[groupId] && games[groupId].state !== STATE.ENDED)
-    return { error: '本群已有游戏进行中，请先 #结束卧底' }
+    return { error: '本群已有游戏进行中，请发送 #结加入卧底进入房间' }
   if (games[groupId]) clearTimer(games[groupId])
   const gameCfg = Config.get().game || {}
   games[groupId] = {
