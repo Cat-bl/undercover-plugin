@@ -1,7 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import * as Game from '../model/game.js'
-import { renderGame } from '../model/render.js'
+import { renderGame, renderHelp } from '../model/render.js'
 import { pickWordPair } from '../model/ai.js'
 
 export class Undercover extends plugin {
@@ -156,11 +155,7 @@ export class Undercover extends plugin {
 
   async help(e) {
     try {
-      const img = await puppeteer.screenshot('undercover-plugin', {
-        saveId: 'help',
-        imgType: 'png',
-        tplFile: './plugins/undercover-plugin/resources/html/help.html',
-      })
+      const img = await renderHelp()
       if (img) return e.reply(img)
       return e.reply('帮助图片渲染失败', true)
     } catch (err) {

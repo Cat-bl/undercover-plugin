@@ -1,14 +1,38 @@
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import Config from './config.js'
 import { STATE, ROLE } from './game.js'
 
+const PLUGIN_NAME = 'undercover-plugin'
+
+async function removeTempHtml(saveId) {
+  await fs.rm(path.join(process.cwd(), 'temp', 'html', PLUGIN_NAME, `${saveId}.html`), { force: true }).catch(() => {})
+}
+
+async function screenshotWithCleanup(data) {
+  try {
+    return await puppeteer.screenshot(PLUGIN_NAME, data)
+  } finally {
+    if (data?.saveId) await removeTempHtml(data.saveId)
+  }
+}
+
 export async function renderGame(game) {
   const data = buildRenderData(game)
-  return puppeteer.screenshot('undercover-plugin', {
+  return screenshotWithCleanup({
     saveId: `chat-${game.groupId}`,
     imgType: 'png',
     tplFile: `./plugins/undercover-plugin/resources/html/chat.html`,
     _data: data,
+  })
+}
+
+export async function renderHelp() {
+  return screenshotWithCleanup({
+    saveId: 'help',
+    imgType: 'png',
+    tplFile: './plugins/undercover-plugin/resources/html/help.html',
   })
 }
 
